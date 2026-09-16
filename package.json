@@ -1,0 +1,53 @@
+{
+  "name": "opencodev2-btw",
+  "version": "0.1.0",
+  "description": "BTW — ask by-the-way side questions beside a running OpenCode V2 session without interrupting it. Bring your own no-tools agent, or use the bundled Ask persona.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "keywords": [
+    "opencode",
+    "ai",
+    "agent",
+    "plugin",
+    "sidebar"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evatths/opencodev2-btw.git"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./tui": "./src/tui.tsx",
+    "./rpc": "./src/rpc.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.mts",
+    "smoke": "node --experimental-strip-types smoke.mts"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.0.3",
+    "@opencode/schema": "2.0.3",
+    "@opencode/theme": "2.0.3",
+    "effect": "4.0.0-rc.112",
+    "zod": "4.1.8"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.5.10",
+    "@opentui/solid": ">=0.5.10",
+    "solid-js": ">=1.9.0"
+  },
+  "devDependencies": {
+    "@opentui/core": "0.5.10",
+    "@opentui/solid": "0.5.10",
+    "@types/node": "^24.0.0",
+    "solid-js": "1.9.12",
+    "typescript": "5.9.3"
+  }
+}
