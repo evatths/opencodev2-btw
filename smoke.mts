@@ -65,11 +65,27 @@ try {
     agents: Object.fromEntries(["build", "title", "summary", "compaction"].map((id) => [id, { model: "applied/btw-fixture" }])),
   }))
   const location = { directory }
-  // Fresh locations expose list/get endpoints before async plugins/agents are ready.
-  await client.plugin.awaitActivation({ location }, { signal: AbortSignal.timeout(15000) })
-  const plugins = await client.plugin.list({ location })
+  // v2.0.24 dropped plugin activation guards, so a cold location's plugin and
+  // agent catalogs fill asynchronously; awaitActivation no longer exists. Poll.
+  const deadline = Date.now() + 20_000
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+  let plugins: any
+  for (;;) {
+    plugins = await client.plugin.list({ location })
+    if (plugins.data.some((p: any) => JSON.stringify(p).includes("btw")) || Date.now() > deadline) break
+    await sleep(200)
+  }
   console.log("Plugin discovery:", JSON.stringify(plugins.data.filter((p: any) => JSON.stringify(p).includes("btw"))))
-  const ask = (await client.agent.get({ agentID: "ask", location })).data
+  let ask: any
+  for (;;) {
+    try {
+      ask = (await client.agent.get({ agentID: "ask", location })).data
+      break
+    } catch {
+      if (Date.now() > deadline) throw new Error("the ask agent never appeared in the cold location")
+      await sleep(200)
+    }
+  }
   validateAsk(ask)
   assert.match(ask.name, /^ask$/i)
   console.log("PASS: canonical Ask profile, picker name and no-tools policy")
@@ -122,7 +138,7 @@ try {
   assert((await client.session.active())[parent.id], "The parent must remain running during the aside")
   console.log("PASS: aside runs beside a busy parent and excludes its unfinished output")
 
-  await client.permission.rules({ sessionID: parent.id, permissions: [{ action: "*", resource: "*", effect: "allow" }] })
+  await client.session.update({ sessionID: parent.id, permissions: [{ action: "*", resource: "*", effect: "allow" }] })
   const parentAtFork = await client.session.get({ sessionID: parent.id })
   const count = requests.length
   const promote = createPromoter(client, async () => { throw new Error("Unexpected recovery dialog") })

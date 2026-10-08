@@ -14,7 +14,7 @@
  *   - Promotion writes ONLY the fork: no parent writes, no generation.
  *   - The carry-over is one queued fork prompt (resume:false — zero inference),
  *     with a deterministic message ID so retries never duplicate it.
- *   - Fork boundary is "latest through" ({ type: "through" }).
+ *   - Fork boundary is latest-through (no `before` arg at v2.0.26).
  *   - Fork permissions are cleared BEFORE switching the fork to the ask agent.
  *   - Synthetic backfill is deterministic (resume: false, stable message ID)
  *     so retries never duplicate content.
@@ -104,7 +104,7 @@ function createEnv() {
         return structuredClone(fork)
       },
       switchAgent: async (input: any) => { record("session.switchAgent", input) },
-      rename: async (input: any) => { record("session.rename", input) },
+      update: async (input: any) => { record("session.update", input) },
       // The ONLY permitted prompt is the fork carry-over (queued, resume:false).
       // Prompting the parent is a hard failure.
       prompt: async (input: any) => {
@@ -116,9 +116,6 @@ function createEnv() {
       // Promotion must never trigger generation on the parent or the fork.
       generate: async (input: any) => { record("session.generate", input); throw new Error("promotion must never generate") },
       interrupt: async (input: any) => { record("session.interrupt", input) },
-    },
-    permission: {
-      rules: async (input: any) => { record("permission.rules", input) },
     },
     agent: {
       get: async (input: any) => {
@@ -162,9 +159,9 @@ test("promotion writes only the fork: exact call choreography, one queued carry-
     "session.context",      // parent read (non-empty guard)
     "session.list",         // baseline fork snapshot (`before`)
     "session.fork",         // the only mutation trigger
-    "permission.rules",     // fork write
+    "session.update",       // fork write: clear permissions
     "session.switchAgent",  // fork write
-    "session.rename",       // fork write
+    "session.update",       // fork write: title
     "session.prompt",       // fork write: queued carry-over, no inference
   ])
   // No generation or interruption happened (mocks throw if they did, and the
@@ -174,9 +171,8 @@ test("promotion writes only the fork: exact call choreography, one queued carry-
   assert.equal(callsOf("session.prompt").length, 1)
 
   // Every write after the fork targets the fork, never the parent.
-  for (const path of ["permission.rules", "session.switchAgent", "session.rename", "session.prompt"]) {
-    const [input] = callsOf(path)
-    assert.equal(input.sessionID, "ses_fork_1", `${path} must target the fork`)
+  for (const path of ["session.update", "session.switchAgent", "session.prompt"]) {
+    for (const input of callsOf(path)) assert.equal(input.sessionID, "ses_fork_1", `${path} must target the fork`)
   }
   const [forkInput] = callsOf("session.fork")
   assert.equal(forkInput.sessionID, PARENT)
@@ -186,28 +182,26 @@ test("promotion writes only the fork: exact call choreography, one queued carry-
 test("fork uses the latest-through boundary", async () => {
   const fresh = createEnv()
   await fresh.promote(promotionInput())
-  assert.deepEqual(fresh.callsOf("session.fork")[0], {
-    sessionID: PARENT,
-    boundary: { type: "through" },
-  })
+  // No `before` = fork through the latest message (the pre-v2.0.4 `{type:"through"}`).
+  assert.deepEqual(fresh.callsOf("session.fork")[0], { sessionID: PARENT })
 })
 
 test("fork permissions are cleared before switching to the ask agent", async () => {
   const fresh = createEnv()
   await fresh.promote(promotionInput())
-  assert.deepEqual(fresh.callsOf("permission.rules")[0], { sessionID: "ses_fork_1", permissions: [] })
+  assert.deepEqual(fresh.callsOf("session.update")[0], { sessionID: "ses_fork_1", permissions: [] })
   const order = fresh.paths()
   assert.ok(
-    order.indexOf("permission.rules") < order.indexOf("session.switchAgent"),
-    "permission.rules must run before session.switchAgent",
+    order.indexOf("session.update") < order.indexOf("session.switchAgent"),
+    "the permission-clearing session.update must run before session.switchAgent",
   )
   assert.equal(fresh.callsOf("session.switchAgent")[0].agent, "ask")
 })
 
-test("rename derives the fork title from the first question", async () => {
+test("the fork title derives from the first question", async () => {
   const fresh = createEnv()
   await fresh.promote(promotionInput())
-  assert.equal(fresh.callsOf("session.rename")[0].title, "BTW: why is the sky blue?")
+  assert.equal(fresh.callsOf("session.update")[1].title, "BTW: why is the sky blue?")
 })
 
 // ---------------------------------------------------------------------------
@@ -244,7 +238,7 @@ test("failed carry-over prompt retries the same fork with the same message ID, n
   assert.deepEqual(promptCalls[1].resume, false)
   // Retry goes straight to the fork writes — no re-validation, no re-fork.
   assert.deepEqual(fresh.paths().slice(-4), [
-    "permission.rules", "session.switchAgent", "session.rename", "session.prompt",
+    "session.update", "session.switchAgent", "session.update", "session.prompt",
   ])
 })
 
@@ -270,7 +264,7 @@ test("lost fork response recovers by explicit candidate selection without re-for
   assert.equal(fresh.callsOf("session.fork").length, 1, "recovery must never create a second fork")
   assert.equal(result.sessionID, "ses_fork_1")
   // The recovered fork gets the full write choreography.
-  assert.deepEqual(fresh.callsOf("permission.rules")[0], { sessionID: "ses_fork_1", permissions: [] })
+  assert.deepEqual(fresh.callsOf("session.update")[0], { sessionID: "ses_fork_1", permissions: [] })
   assert.equal(fresh.callsOf("session.prompt")[0].id, `msg_btw_${OPERATION}`)
 })
 
@@ -359,16 +353,13 @@ test("a new operation after a completed promotion forks fresh and completes", as
   )
   assert.equal(second.sessionID, "ses_fork_2")
   assert.equal(fresh.callsOf("session.fork").length, 2)
-  assert.deepEqual(fresh.callsOf("session.fork")[1], {
-    sessionID: PARENT,
-    boundary: { type: "through" },
-  })
+  assert.deepEqual(fresh.callsOf("session.fork")[1], { sessionID: PARENT })
   // The second fork's carry-over carries the NEW operation's ID and transcript.
   const promptCalls = fresh.callsOf("session.prompt")
   assert.equal(promptCalls[1].id, `msg_btw_${OPERATION_2}`)
   assert.equal(promptCalls[1].sessionID, "ses_fork_2")
   assert.equal(promptCalls[1].text, transcript(exchanges2, PARENT))
-  assert.equal(fresh.callsOf("session.rename")[1].title, "BTW: and the sunset?")
+  assert.equal(fresh.callsOf("session.update")[3].title, "BTW: and the sunset?")
 })
 
 test("a completed promotion returns the cached fork without any client calls", async () => {

@@ -32,20 +32,20 @@
     "smoke": "node --experimental-strip-types smoke.mts"
   },
   "dependencies": {
-    "@opencode/plugin": "2.0.3",
-    "@opencode/schema": "2.0.3",
-    "@opencode/theme": "2.0.3",
+    "@opencode/plugin": "2.0.26",
+    "@opencode/schema": "2.0.26",
+    "@opencode/theme": "2.0.26",
     "effect": "4.0.0-rc.112",
     "zod": "4.1.8"
   },
   "peerDependencies": {
-    "@opentui/core": ">=0.5.10",
-    "@opentui/solid": ">=0.5.10",
+    "@opentui/core": ">=0.5.17",
+    "@opentui/solid": ">=0.5.17",
     "solid-js": ">=1.9.0"
   },
   "devDependencies": {
-    "@opentui/core": "0.5.10",
-    "@opentui/solid": "0.5.10",
+    "@opentui/core": "0.5.17",
+    "@opentui/solid": "0.5.17",
     "@types/node": "^24.0.0",
     "solid-js": "1.9.12",
     "typescript": "5.9.3"

@@ -3,7 +3,7 @@ import { transcript } from "./aside.ts"
 import { validateAsk } from "./generate.ts"
 import { Promotion } from "./rpc.ts"
 
-type Client = Pick<OpenCodeClient, "session" | "permission" | "agent">
+type Client = Pick<OpenCodeClient, "session" | "agent">
 
 /** All promotion writes target the fork; no prompt or wake call is made. */
 export function createPromoter(client: Client, recover: (candidates: SessionInfo[]) => Promise<string | undefined>, agentID = "ask") {
@@ -46,7 +46,9 @@ export function createPromoter(client: Client, recover: (candidates: SessionInfo
       before = new Set((await listForks()).map((session) => session.id))
       attempted = true
       try {
-        const fork = await client.session.fork({ sessionID: input.sessionID, boundary: { type: "through" } })
+        // No `before` boundary = fork through the latest message (the old
+        // v2.0.3 `{type: "through"}` semantics, verified in Session.fork source).
+        const fork = await client.session.fork({ sessionID: input.sessionID })
         forkID = fork.id
       } catch (error) {
         // A 4xx is a definitive rejection, unlike transport errors or 5xx.
@@ -54,9 +56,10 @@ export function createPromoter(client: Client, recover: (candidates: SessionInfo
         throw error
       }
     }
-    await client.permission.rules({ sessionID: forkID, permissions: [] })
+    // permission.rules and session.rename were folded into session.update in v2.0.4.
+    await client.session.update({ sessionID: forkID, permissions: [] })
     await client.session.switchAgent({ sessionID: forkID, agent: agentID })
-    await client.session.rename({ sessionID: forkID, title: `BTW: ${input.exchanges[0].question.replace(/\s+/g, " ").slice(0, 72)}` })
+    await client.session.update({ sessionID: forkID, title: `BTW: ${input.exchanges[0].question.replace(/\s+/g, " ").slice(0, 72)}` })
     // Carry the Q&A as a real, queued USER message (the wrap-it-up primitive):
     // unlike a synthetic, a delivered user message renders as visible chat
     // content, not a description-only notice row. resume:false queues it

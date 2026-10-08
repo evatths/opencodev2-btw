@@ -29,7 +29,7 @@ function AsidePanel(props: { ctx: Context; panel: PanelInput; aside: Aside; sess
   const busy = () => state().status === "generating" || state().status === "expanding"
   const theme = () => ctx.theme
   const syntax = createMemo(() => {
-    const style = generateSyntax(theme(), ctx.themeMode)
+    const style = generateSyntax(theme())
     onCleanup(() => style.destroy())
     return style
   })
@@ -145,37 +145,37 @@ function AsidePanel(props: { ctx: Context; panel: PanelInput; aside: Aside; sess
   return (
     <box flexDirection="column" flexGrow={1} height="100%" paddingX={1} gap={1} onMouseDown={props.panel.focus}>
       <box flexDirection="column" flexShrink={0}>
-        <text fg={theme().text.default}><b>Ask</b> · BTW</text>
-        <text fg={theme().text.subdued}>Current completed context · {model()}</text>
-        <text fg={theme().text.subdued}>Ephemeral · parent keeps working · model follows the session</text>
+        <text fg={theme().text.base}><b>Ask</b> · BTW</text>
+        <text fg={theme().text.muted}>Current completed context · {model()}</text>
+        <text fg={theme().text.muted}>Ephemeral · parent keeps working · model follows the session</text>
       </box>
       <scrollbox ref={scroll} flexGrow={1} minHeight={1} scrollX={false} stickyScroll stickyStart="bottom" contentOptions={{ gap: 1 }}>
-        <Show when={state().exchanges.length} fallback={<text fg={theme().text.subdued}>Ask about this conversation. Follow-ups also see newly completed parent context.</text>}>
+        <Show when={state().exchanges.length} fallback={<text fg={theme().text.muted}>Ask about this conversation. Follow-ups also see newly completed parent context.</text>}>
           <For each={state().exchanges}>{(exchange) => (
             <box flexDirection="column" gap={1} flexShrink={0}>
-              <text fg={theme().text.default}><b>You</b>  {exchange.question}</text>
+              <text fg={theme().text.base}><b>You</b>  {exchange.question}</text>
               <box flexDirection="column" flexShrink={0}>
-                <text fg={theme().text.subdued}><b>Ask</b></text>
-                <markdown content={exchange.answer} syntaxStyle={syntax()} fg={theme().text.default} conceal streaming={false} />
+                <text fg={theme().text.muted}><b>Ask</b></text>
+                <markdown content={exchange.answer} syntaxStyle={syntax()} fg={theme().text.base} conceal streaming={false} />
               </box>
             </box>
           )}</For>
         </Show>
         <Show when={state().status === "generating"}>
-          <text fg={theme().text.status.running}>Asking…  Esc cancels this request</text>
+          <text fg={theme().hue.interactive[200]}>Asking…  Esc cancels this request</text>
         </Show>
         <Show when={state().status === "expanding"}>
-          <text fg={theme().text.status.running}>Creating fork and carrying over the conversation…</text>
+          <text fg={theme().hue.interactive[200]}>Creating fork and carrying over the conversation…</text>
         </Show>
       </scrollbox>
       <Show when={state().error}>
-        <text flexShrink={0} fg={theme().text.feedback.error.default}>{state().error}</text>
+        <text flexShrink={0} fg={theme().text.feedback.error.base}>{state().error}</text>
       </Show>
       <Show when={state().forkID}>
-        <text fg={theme().text.subdued}>Fork ready. Expand to Fork opens it; New aside starts fresh.</text>
+        <text fg={theme().text.muted}>Fork ready. Expand to Fork opens it; New aside starts fresh.</text>
       </Show>
       <Show when={!state().promotionID}>
-        <box border borderColor={theme().border.default} flexShrink={0}>
+        <box border borderColor={theme().border.base} flexShrink={0}>
           <textarea
             ref={editor}
             initialValue={state().draft}
@@ -184,9 +184,9 @@ function AsidePanel(props: { ctx: Context; panel: PanelInput; aside: Aside; sess
             flexGrow={1}
             focused={props.panel.focused && !busy()}
             placeholder="Ask a question…"
-            textColor={theme().text.default}
-            backgroundColor={theme().background.default}
-            focusedBackgroundColor={theme().background.default}
+            textColor={theme().text.base}
+            backgroundColor={theme().background.base}
+            focusedBackgroundColor={theme().background.base}
             keyBindings={[{ name: "return", action: "submit" }, { name: "return", shift: true, action: "newline" }]}
             onContentChange={() => {
               if (!editor) return
@@ -200,15 +200,15 @@ function AsidePanel(props: { ctx: Context; panel: PanelInput; aside: Aside; sess
         </box>
       </Show>
       <box flexDirection="row" flexWrap="wrap" columnGap={2} flexShrink={0}>
-        <text fg={theme().text.subdued} onMouseDown={() => { if (!busy()) submit() }}>Enter Ask</text>
-        <text fg={theme().text.subdued} onMouseDown={props.panel.toggleFullscreen}>^F {props.panel.presentation === "fullscreen" ? "Side panel" : "Fullscreen"}</text>
-        <text fg={!busy() && state().exchanges.length ? theme().text.default : theme().text.subdued} onMouseDown={() => { void expand() }}>^E Expand to Fork</text>
-        <Show when={ctx.keymap.shortcuts("btw.model")[0]} fallback={<text fg={theme().text.subdued} onMouseDown={() => { void chooseModel() }}>Model</text>}>{(key) => (
-          <text fg={theme().text.subdued} onMouseDown={() => { void chooseModel() }}>{key()} Model</text>
+        <text fg={theme().text.muted} onMouseDown={() => { if (!busy()) submit() }}>Enter Ask</text>
+        <text fg={theme().text.muted} onMouseDown={props.panel.toggleFullscreen}>^F {props.panel.presentation === "fullscreen" ? "Side panel" : "Fullscreen"}</text>
+        <text fg={!busy() && state().exchanges.length ? theme().text.base : theme().text.muted} onMouseDown={() => { void expand() }}>^E Expand to Fork</text>
+        <Show when={ctx.keymap.shortcuts("btw.model")[0]} fallback={<text fg={theme().text.muted} onMouseDown={() => { void chooseModel() }}>Model</text>}>{(key) => (
+          <text fg={theme().text.muted} onMouseDown={() => { void chooseModel() }}>{key()} Model</text>
         )}</Show>
-        <text fg={theme().text.subdued} onMouseDown={copy}>^Y Copy</text>
-        <text fg={theme().text.subdued} onMouseDown={() => aside.reset()}>^N New aside</text>
-        <text fg={theme().text.subdued} onMouseDown={close}>Esc Close</text>
+        <text fg={theme().text.muted} onMouseDown={copy}>^Y Copy</text>
+        <text fg={theme().text.muted} onMouseDown={() => aside.reset()}>^N New aside</text>
+        <text fg={theme().text.muted} onMouseDown={close}>Esc Close</text>
       </box>
     </box>
   )
@@ -243,7 +243,8 @@ export default Plugin.define({
       aside = createAside(sessionID, {
         ask: async (input, signal) => {
           const origin = location()
-          await ctx.client.plugin.awaitActivation({ location: origin }, { signal })
+          // awaitActivation was dropped in v2.0.4; plugins are activated before
+          // the first catalog read now, so nothing to wait for here.
           signal.throwIfAborted()
           const requestID = crypto.randomUUID()
           // V2's RPC handler survives a disconnected HTTP caller. Cancel the
@@ -312,7 +313,7 @@ export default Plugin.define({
       render: ({ sessionID }) => {
         const imported = () => ctx.data.session.pending.list(sessionID).find((item) => item.type === "user" && item.payload.metadata?.btw === true)
         return <Show when={imported()}>{(item) => (
-          <text fg={ctx.theme.text.subdued} onMouseDown={() => {
+          <text fg={ctx.theme.text.muted} onMouseDown={() => {
             const entry = item()
             if (entry.type !== "user") return
             ctx.ui.dialog.set({ size: "large" })

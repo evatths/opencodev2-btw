@@ -189,6 +189,27 @@ test("validateAsk rejects when the last rule is not the blanket deny", () => {
   assert.throws(() => validateAsk(allow), /blanket no-tools/)
 })
 
+test("validateAsk accepts trailing deny rules appended after the blanket deny", () => {
+  // v2.0.26 appends host/global rules after an agent's own permissions — e.g.
+  // a browser deny while the browser tool is off. Denies only restrict further.
+  const hostAppended = canonicalProfile({
+    permissions: [
+      { action: "*", resource: "*", effect: "deny" },
+      { action: "browser", resource: "*", effect: "deny" },
+    ],
+  })
+  assert.equal(validateAsk(hostAppended), hostAppended.system)
+
+  // A later ask-effect rule re-exposes the tool, so it is still rejected.
+  const reExposed = canonicalProfile({
+    permissions: [
+      { action: "*", resource: "*", effect: "deny" },
+      { action: "browser", resource: "*", effect: "ask" },
+    ],
+  })
+  assert.throws(() => validateAsk(reExposed), /blanket no-tools/)
+})
+
 // ---------------------------------------------------------------------------
 // resolveAskStrategy — bring your own agent vs the bundled persona
 // ---------------------------------------------------------------------------

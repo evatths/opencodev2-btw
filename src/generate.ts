@@ -34,14 +34,24 @@ export function loadBuiltinPrompt(url: string | URL = import.meta.url): string {
   return stripped.trim()
 }
 
-/** Until V2 accepts an agent override, support the canonical blanket-deny profile. */
+/**
+ * Until V2 accepts an agent override, support the canonical blanket-deny profile.
+ */
 export function validateAsk(agent: AskProfile): string {
   if (!agent.system?.trim() || agent.hidden || !["primary", "all"].includes(agent.mode)) {
     throw new Error("Ask must be a visible primary agent with a system prompt. Check your ask agent configuration; the BTW fallback only applies when no agent is configured.")
   }
-  const last = agent.permissions.at(-1)
-  if (last?.action !== "*" || last.resource !== "*" || last.effect !== "deny") {
-    throw new Error("Ask must end with a blanket no-tools permission rule. The BTW adapter does not support partial tool policies.")
+  // The host appends trailing deny rules after an agent's own blanket deny
+  // (v2.0.26 appends a browser deny while the browser tool is off; configured
+  // global rules land there too). Denies can only restrict further, so they
+  // are fine — only a later allow/ask could punch a hole in the no-tools
+  // profile.
+  const blanket = agent.permissions.findLastIndex((rule) => rule.action === "*" && rule.resource === "*" && rule.effect === "deny")
+  if (blanket === -1) {
+    throw new Error("Ask must have a blanket no-tools permission rule. The BTW adapter does not support partial tool policies.")
+  }
+  if (agent.permissions.slice(blanket + 1).some((rule) => rule.effect !== "deny")) {
+    throw new Error("Ask's blanket no-tools deny must not be followed by any allow or ask rule. Check your ask agent configuration; the BTW adapter does not support partial tool policies.")
   }
   return agent.system
 }
