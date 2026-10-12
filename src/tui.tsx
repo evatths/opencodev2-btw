@@ -274,7 +274,7 @@ export default Plugin.define({
           mode: "global",
           commands: [{
             id: "btw.open", title: "Ask a side question", group: "BTW", palette: true,
-            slash: { name: "btw", arguments: true },
+            slash: { name: "btw-better", arguments: true },
             enabled: () => ctx.ui.router.current().type === "session",
             run: (question) => {
               const route = ctx.ui.router.current()

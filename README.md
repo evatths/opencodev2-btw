@@ -4,7 +4,7 @@ Ask quick clarifying questions in a side panel — without derailing your sessio
 
 ## How it works
 
-Run `/btw <question>` (or `/btw` to reopen the panel) and BTW opens an **Ask** side panel next to your session. Each question sees the parent session's latest **completed** context plus the earlier local exchanges; queued inputs and unfinished tool work aren't visible. Answers are generated ephemerally — the parent session, its agent, permissions, inbox, and history are never modified.
+Run `/btw-better <question>` (or `/btw-better` to reopen the panel) and BTW opens an **Ask** side panel next to your session. Each question sees the parent session's latest **completed** context plus the earlier local exchanges; queued inputs and unfinished tool work aren't visible. Answers are generated ephemerally — the parent session, its agent, permissions, inbox, and history are never modified.
 
 When a side question turns into something worth acting on, **Expand to Fork** promotes the aside into a real, independently forked session. The completed Q&A is carried over as a visible queued user message (rendered as markdown in the fork's transcript), ready to continue the conversation — and promotion makes **zero model calls**.
 
@@ -53,11 +53,11 @@ Add the plugin to your `opencode.json` to configure it:
 
 The `agent` option names an agent **you** have already defined in your OpenCode config. If an agent with that name exists, BTW uses it — its prompt, its tone, its model preferences — as the persona for the Ask panel.
 
-If the named agent doesn't exist (or you don't configure the option at all), BTW falls back to a **bundled built-in Ask prompt**. Zero configuration is required: install the plugin and `/btw` just works.
+If the named agent doesn't exist (or you don't configure the option at all), BTW falls back to a **bundled built-in Ask prompt**. Zero configuration is required: install the plugin and `/btw-better` just works.
 
 ## Features
 
-- **`/btw` side panel** — opens an Ask panel beside the working session; questions see the parent's latest completed context
+- **`/btw-better` side panel** — opens an Ask panel beside the working session; questions see the parent's latest completed context
 - **Ephemeral generation** — answers never touch the parent session's history, agent, or permissions
 - **Shell-style prompt recall** — ↑/↓ recalls previous questions when the input is empty; history is per session
 - **Model picker** — `<leader>m` picks the model, using the same key as the host's picker while the panel is focused

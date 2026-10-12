@@ -83,7 +83,7 @@ export function flattenToolHistory(messages: SessionGenerate["messages"]): Sessi
 /**
  * The primary agent loop's `session.context` hook: Ask turns on a session whose
  * inherited history still carries tool-call/tool-result content hit the same
- * Bedrock toolConfig rejection as `/btw` (see flattenToolHistory). This covers
+ * Bedrock toolConfig rejection as `/btw-better` (see flattenToolHistory). This covers
  * an Expand-to-Fork's first message and any session switched to Ask via the
  * ordinary picker. Other agents are left untouched.
  */
