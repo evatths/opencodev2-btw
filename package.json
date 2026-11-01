@@ -36,7 +36,7 @@
     "@opencode/schema": "2.0.3",
     "@opencode/theme": "2.0.3",
     "effect": "4.0.0-rc.112",
-    "zod": "4.1.8"
+    "zod": "4.6.6"
   },
   "peerDependencies": {
     "@opentui/core": ">=0.5.10",
